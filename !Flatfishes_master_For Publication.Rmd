@@ -1,0 +1,292 @@
+---
+title: "Flatfishes"
+author: "Corinthia Black"
+date: "9/26/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages
+```{r}
+library(geomorph)
+library(dplyr)
+library(vegan)
+library(devtools)
+library(ggbiplot)
+library(ape)
+library(phytools)
+library(StereoMorph)
+
+## Set color palette
+colblind_pal <- c("#000000", "#004949", "#009292", "#ff6db6", "#ffb677", "#490092", "#006ddb", "#b66dff", "#b6dbff", "#920000", "#924900", "#dbd100", "#24ff24", "#ffff6d", "#6db6ff")
+
+## View colors as pie chart
+#pie(rep(1, length(colblind_pal)), col = colblind_pal)
+```
+
+## Load data
+```{r}
+## Load data from TPS file and save as 2D array
+OGlandmarks=readland.tps("Landmarks.TPS", specID = c("imageID"))
+TwoDlandmarks=two.d.array(OGlandmarks)
+
+## Check if Landmarks are missing
+## If FALSE -> move on
+any(is.na(OGlandmarks))
+
+## Run GPA on landmark data
+gpa=gpagen(OGlandmarks)
+
+## Find individual closest to the mean
+#findMeanSpec(gpa$coords)
+```
+
+## Averaged PCA
+```{r}
+## Save coords from GPA
+coords=two.d.array(gpa$coords)
+
+## load classifiers
+classifier=read.csv("classifiers.csv", header = T, row.names = 1)
+
+## Mean of species - average individual landmarks by species name
+averagedcoords=aggregate(coords~classifier$Species, FUN = mean)
+averagedcoords=data.frame(averagedcoords, row.names = 1)
+
+## Run GPA on mean data
+meancoords=arrayspecs(averagedcoords, 38, 2)
+meangpa=gpagen(meancoords)
+pca=plotTangentSpace(meangpa$coords)
+pca
+```
+
+## Phylomorphospace
+```{r}
+## Read phylogeny
+tree=read.tree("Tree.tree")
+
+## Trim tree to match species in data set
+species=as.factor(classifier$Species)
+trimmed.tree=drop.tip(tree,tree$tip.label[-na.omit(match(species, tree$tip.label))])
+
+## Plot trimmed phylogeny
+#pdf(file = "Phylogeny.pdf", width=7, height=12)
+#plot(trimmed.tree)
+#dev.off()
+
+## Trim species procrusties landmarks to match phylogeny
+include=trimmed.tree$tip.label
+phylomorphospacecoords=subset(averagedcoords, rownames(averagedcoords) %in% include)
+phylomorphospacecoords=phylomorphospacecoords[trimmed.tree$tip.label,] #Order landmarks - needed for labels and colors to be correct
+
+## Run GPA
+phylocoords3D=arrayspecs(phylomorphospacecoords, 38, 2)
+phylomorphospacegpa=gpagen(phylocoords3D)
+
+## Find distinct classifiers and trim/order to match phylogeny
+mean.classifier=distinct(classifier)
+row.names(mean.classifier)=mean.classifier$Species
+phylo.classifiers=subset(mean.classifier, rownames(mean.classifier) %in% include)
+phylo.classifiers=phylo.classifiers[trimmed.tree$tip.label,]
+
+## Set color for PCA
+col.fam=colblind_pal
+names(col.fam)=levels(phylo.classifiers$Family)
+col.fam=col.fam[match(phylo.classifiers$Family, names(col.fam))]
+
+## Generate PCA/Phylomorphospace for PC1 and PC2 with color blind colors
+pdf(file = "Figure1.pdf", width=7.2, height=5)
+fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1))
+fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
+PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
+#text(PPCA.coords, labels = phylo.classifiers$Figures, cex = .75)
+legend(-0.2, 0.105, legend = c("Achiridae","Achiropsettidae","Bothidae","Citharidae",   "Cynoglossidae","Paralichthyidae1","Paralichthyidae2" ,"Pleuronectidae","Poecilopsettidae","Psettodiae" ,"Rhombosoleidae","Samaridae","Scophthalmidae1","Scophthalmidae2","Soleidae"), col=c("#000000","#004949","#009292","#ff6db6","#ffb677","#490092","#006ddb","#b66dff","#b6dbff","#920000","#924900","#dbd100","#24ff24","#ffff6d","#6db6ff"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+dev.off()
+
+## Generate PCA/Phylomorphospace for PC3 and PC4 with color blind colors
+pdf(file = "SigFigure3.pdf", width=7.2, height=5)
+fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 3, yaxis = 4)
+fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
+PPCA.coords=subset(fish.PPCA$x[3:4], row.names(fish.PPCA$x) %in% include)
+#text(PPCA.coords, labels = phylo.classifiers$Figures, cex = .75)
+legend(-0.14, 0.07, legend = c("Achiridae","Achiropsettidae","Bothidae","Citharidae",   "Cynoglossidae","Paralichthyidae1","Paralichthyidae2" ,"Pleuronectidae","Poecilopsettidae","Psettodiae" ,"Rhombosoleidae","Samaridae","Scophthalmidae1","Scophthalmidae2","Soleidae"), col=c("#000000","#004949","#009292","#ff6db6","#ffb677","#490092","#006ddb","#b66dff","#b6dbff","#920000","#924900","#dbd100","#24ff24","#ffff6d","#6db6ff"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+dev.off()
+
+## 3D PCA of axes 1, 2, and 3
+plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 1, yaxis = 2, zaxis = 3)
+#legend3d("bottomleft", legend = c("Achiridae","Achiropsettidae","Bothidae","Citharidae",   "Cynoglossidae","Paralichthyidae1","Paralichthyidae2" ,"Pleuronectidae","Poecilopsettidae","Psettodiae" ,"Rhombosoleidae","Samaridae","Scophthalmidae1","Scophthalmidae2","Soleidae"), col=c("#000000","#004949","#009292","#ff6db6","#ffb677","#490092","#006ddb","#b66dff","#b6dbff","#920000","#924900","#dbd100","#24ff24","#ffff6d","#6db6ff"), cex=1, box.lty=0, pch = 19, pt.cex = 1)
+writeWebGL(dir = "webGL", filename = file.path("webGL", "3dpca.html"), width = 600, height=600)
+```
+
+#Chronophylomorphospace
+```{r}
+## Generate 3D Chronophylomorphospace for PC1 and PC2 with color blind colors
+fish.anc=plotGMPhyloMorphoSpace(trimmed.tree, phylomorphospacegpa$coords, tip.labels = FALSE, ancStates=T, node.labels = FALSE, zaxis = "time", shadow = T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1))
+fish.PPCA=prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
+PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
+
+## Save rgl environment as a PDF, must turn graph to posisiton you want
+rgl.postscript("chronophylomorphospace2.svg", fmt="svg")
+
+## Generate interactive 3D model as an HTML file
+writeWebGL(dir = "webGL", filename = file.path("webGL", "SigFig4.html"), width = 800, height=800)
+```
+
+#Phylosignal
+```{r}
+## Calculate Phylogenetic Signal
+fishphy=physignal(phylomorphospacegpa$coords, trimmed.tree, iter=999)
+summary(fishphy)
+plot(fishphy)
+```
+
+## Backtransformation Flatfishes
+```{r}
+## This code uses Stereomorpho exclusively 
+## Need to load btShapes.R from 
+## https://aaronolsen.github.io/tutorials/morphometrics/backtransform.html
+source('btShapes.R')
+
+## Save GPA Coords as object
+gpa_array=meangpa$coords
+
+## Convert coords to be used in backtransformation
+gpa_mat=t(apply(gpa_array, 3, function(y) matrix(t(y),1)))
+resEig=eigen(cov(gpa_mat))
+scores=gpa_mat %*% resEig$vectors
+scores=scores[order(row.names(scores)),]
+per_var <- (resEig$values / sum(resEig$values))*100
+
+## Set classifiers and correct order to match bt data
+bt.group=read.delim("meangroups.txt", header = TRUE)
+row.names(bt.group)=bt.group$Original
+bt.group=bt.group[order(row.names(bt.group)),]
+
+## Reduced color pal to match phylomorphospace families
+bt.colblind_pal <- c("#000000", "#004949", "#009292", "#ff6db6", "#ffb677", "#490092", "#b66dff", "#b6dbff", "#920000", "#924900", "#dbd100", "#ffff6d", "#6db6ff")
+
+## Set colors for bt PCA
+bt.col=bt.colblind_pal
+names(bt.col)=levels(bt.group$bt.family)
+bt.col=bt.col[match(bt.group$bt.family,names(bt.col))]
+
+## Function to generate outlines and bt
+outline=function(xy, coor, size=1, col='black'){
+  if(ncol(coor) == 3){
+		coor <- coor %*% matrix(c(1,0,0, 0,cos(-pi/2),sin(-pi/2), 
+		0,-sin(-pi/2),cos(-pi/2)), nrow=3, ncol=3)
+	}
+	# Get just x,y coordinates (orthographic projection into xy-plane)
+	coor <- coor[, 1:2]
+	# Get plot aspect ratio
+	w <- par('pin')[1]/diff(par('usr')[1:2])
+	h <- par('pin')[2]/diff(par('usr')[3:4])
+	asp <- w/h
+	# Correct for plot aspect ratio not necessarily being 1:1
+	coor[, 1] <- coor[, 1] * (1/asp)
+	# Scale points and place back in position
+	coor <- coor*size
+	# Center about zero based on range of coordinates
+	coor <- coor - matrix(colMeans(apply(coor, 2, range)), 
+		nrow=nrow(coor), ncol=ncol(coor), byrow=TRUE)
+	# Move shape to PC score
+	coor <- coor + matrix(xy, nrow(coor), ncol(coor), byrow=TRUE)
+	
+	### Create shape
+	polygon_order <- c(1,3,4,5,6,7,8,9,10,2,1)
+	line_order=c(1,2)
+	line2_order=c(14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14)
+	dorsalfin_order=c(3,4,5,4,3)
+	analfin_order=c(8,9,10,9,8)
+	# Create filled polygon
+	polygon(coor[polygon_order, ], col = "#D3D3D3", border = "#D3D3D3")
+	polygon(coor[line_order, ], border = "black")
+	polygon(coor[line2_order, ], border = "#808080")
+	polygon(coor[dorsalfin_order, ], border = "#808080")
+	polygon(coor[analfin_order, ], border = "#808080")
+
+}
+
+## Generate Backtransformed PCA for PC1 and PC2
+pcs=1:2
+pdf('Figure1.pdf', width=7.2, height=5)
+plot(scores[, pcs], type='n',
+	xlab=paste0('PC', pcs[1], ' (', round(per_var[pcs[1]]), '%)'),
+	ylab=paste0('PC', pcs[2], ' (', round(per_var[pcs[2]]), '%)'))
+btShapes(scores=scores, vectors=resEig$vectors, fcn=outline, pcs=pcs, n=c(6,6), m=dim(gpa_array)[2], row.names=dimnames(gpa_array)[[1]], pc.margin=c(0.06,0.05), size=0.25)
+points(scores[,pcs], pch=21, bg=bt.col, cex=1.25)
+#text(scores[, pcs], labels=bt.group$Figure, cex=0.8, pos=4, offset=.5)
+dev.off()
+
+## Generate bt PCA for PC3 and PC4
+pcs=3:4
+pdf('SigFigure1.pdf', width=7.2, height=5)
+plot(scores[, pcs], type='n',
+	xlab=paste0('PC', pcs[3], ' (', round(per_var[pcs[3]]), '%)'),
+	ylab=paste0('PC', pcs[4], ' (', round(per_var[pcs[4]]), '%)'))
+btShapes(scores=scores, vectors=resEig$vectors, fcn=outline, pcs=pcs, n=c(6,6), m=dim(gpa_array)[2], row.names=dimnames(gpa_array)[[1]], pc.margin=c(0.06,0.05), size=0.2)
+points(scores[,pcs], pch=21, bg=bt.col, cex=1.25)
+#text(scores[, pcs], labels=bt.group$Figure, cex=0.8, pos=4, offset=.5)
+dev.off()
+```
+
+## Input Ecological Data
+```{r}
+## Read txt file containing ecological data
+ecology=read.delim("ecologydata2.0.txt", header = TRUE)
+# set row names as first column
+row.names(ecology)=ecology$X
+ecology$X=NULL
+# Remove NAs from matrix - ANOVA will not run with NAs
+ecology=ecology[complete.cases(ecology),]
+
+ecocoords=as.data.frame(averagedcoords)
+ecocoords=subset(ecocoords, row.names(ecocoords) %in% row.names(ecology))
+ecocoords=as.matrix(ecocoords)
+ecocoordsids=row.names(ecocoords)
+ecocoords=apply(ecocoords, 2, as.numeric)
+
+ecocoords=arrayspecs(ecocoords, 38,2)
+dimnames(ecocoords)[[3]]=ecocoordsids
+
+procustecology=gpagen(ecocoords)
+
+ANOVAtree=drop.tip(tree,tree$tip.label[-match(ecocoordsids, tree$tip.label)])
+```
+
+## Procrusties ANOVA
+```{r}
+gdf=geomorph.data.frame(procustecology,depth=ecology$depthzone, climate=ecology$climate, temp=ecology$meantemp, water=ecology$watertype, ocean=ecology$ocean, food=ecology$fooditems, vertinvert=ecology$invert.vert, trophic=ecology$trophiclevel, sediment=ecology$sediment, temp=ecology$meantemp, reef=ecology$reef.assoc, shelf=ecology$continentalshelf, river=ecology$river, family=ecology$family) #geomorph data frame
+
+fit.null=procD.lm(coords~1, data = gdf, iter = 999, SS.type = "III")
+fit.full=procD.lm(coords~depth+climate+water+food+sediment, data = gdf, iter = 999, SS.type = "III")
+
+summary(fit.full)
+
+pw.depth=pairwise(fit.full, groups = gdf$depth)
+summary(pw.depth, test.type = "dist", confidence = 0.95, stat.table = TRUE)
+
+pw.climate=pairwise(fit.full, groups = gdf$climate)
+summary(pw.climate, test.type = "dist", confidence = 0.95, stat.table = TRUE)
+
+pw.water=pairwise(fit.full, groups = gdf$water)
+summary(pw.water, test.type = "dist", confidence = 0.95, stat.table = TRUE)
+
+pw.food=pairwise(fit.full, groups = gdf$food)
+summary(pw.food, test.type = "dist", confidence = 0.95, stat.table = TRUE)
+
+pw.sediment=pairwise(fit.full, groups = gdf$sediment)
+summary(pw.sediment, test.type = "dist", confidence = 0.95, stat.table = TRUE)
+
+plotTangentSpace(gdf$coords, groups = gdf$sediment)
+```
+
+## Phylogenetic ANOVA only
+```{r}
+phyloANOVA=procD.pgls(coords~depth+climate+water+food+sediment,data = gdf, ANOVAtree, iner=999, effect.type = c("F", "cohen"), SS.type = "III")
+
+summary(phyloANOVA)
+```
