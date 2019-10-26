@@ -1,5 +1,9 @@
 # Shared Evolutionary History Shapes Skeletal Shape in Flatfishes
-## Black and Berendzen 20##
+Black and Berendzen 20##
+
+---
+
+This code completes PCA and ANOVA analyses and generated publication figures.
 
 ### Required R packages
 * geomorph
