@@ -145,8 +145,8 @@ plot(fishphy)
 
 ## Backtransformation Flatfishes
 ```{r}
-## This code uses Stereomorpho exclusively 
-## Need to load btShapes.R from 
+## This code uses Stereomorpho exclusively
+## Need to load btShapes.R from
 ## https://aaronolsen.github.io/tutorials/morphometrics/backtransform.html
 source('btShapes.R')
 
@@ -176,7 +176,7 @@ bt.col=bt.col[match(bt.group$bt.family,names(bt.col))]
 ## Function to generate outlines and bt
 outline=function(xy, coor, size=1, col='black'){
   if(ncol(coor) == 3){
-		coor <- coor %*% matrix(c(1,0,0, 0,cos(-pi/2),sin(-pi/2), 
+		coor <- coor %*% matrix(c(1,0,0, 0,cos(-pi/2),sin(-pi/2),
 		0,-sin(-pi/2),cos(-pi/2)), nrow=3, ncol=3)
 	}
 	# Get just x,y coordinates (orthographic projection into xy-plane)
@@ -190,11 +190,11 @@ outline=function(xy, coor, size=1, col='black'){
 	# Scale points and place back in position
 	coor <- coor*size
 	# Center about zero based on range of coordinates
-	coor <- coor - matrix(colMeans(apply(coor, 2, range)), 
+	coor <- coor - matrix(colMeans(apply(coor, 2, range)),
 		nrow=nrow(coor), ncol=ncol(coor), byrow=TRUE)
 	# Move shape to PC score
 	coor <- coor + matrix(xy, nrow(coor), ncol(coor), byrow=TRUE)
-	
+
 	### Create shape
 	polygon_order <- c(1,3,4,5,6,7,8,9,10,2,1)
 	line_order=c(1,2)
@@ -236,7 +236,7 @@ dev.off()
 ## Input Ecological Data
 ```{r}
 ## Read txt file containing ecological data
-ecology=read.delim("ecologydata2.0.txt", header = TRUE)
+ecology=read.delim("ecology.txt", header = TRUE)
 # set row names as first column
 row.names(ecology)=ecology$X
 ecology$X=NULL
