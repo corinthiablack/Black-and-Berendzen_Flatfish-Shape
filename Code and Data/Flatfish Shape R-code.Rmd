@@ -98,7 +98,7 @@ names(col.fam)=levels(phylo.classifiers$Family)
 col.fam=col.fam[match(phylo.classifiers$Family, names(col.fam))]
 
 ## Generate PCA/Phylomorphospace for PC1 and PC2 with color blind colors
-pdf(file = "Figure1.pdf", width=7.2, height=5)
+pdf(file = "Figure3.pdf", width=7.2, height=5)
 fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1))
 fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
 PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
@@ -107,7 +107,7 @@ legend(-0.2, 0.105, legend = c("Achiridae","Achiropsettidae","Bothidae","Cithari
 dev.off()
 
 ## Generate PCA/Phylomorphospace for PC3 and PC4 with color blind colors
-pdf(file = "SigFigure3.pdf", width=7.2, height=5)
+pdf(file = "FigureS4.pdf", width=7.2, height=5)
 fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 3, yaxis = 4)
 fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
 PPCA.coords=subset(fish.PPCA$x[3:4], row.names(fish.PPCA$x) %in% include)
@@ -118,7 +118,7 @@ dev.off()
 ## 3D PCA of axes 1, 2, and 3
 plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 1, yaxis = 2, zaxis = 3)
 #legend3d("bottomleft", legend = c("Achiridae","Achiropsettidae","Bothidae","Citharidae",   "Cynoglossidae","Paralichthyidae1","Paralichthyidae2" ,"Pleuronectidae","Poecilopsettidae","Psettodiae" ,"Rhombosoleidae","Samaridae","Scophthalmidae1","Scophthalmidae2","Soleidae"), col=c("#000000","#004949","#009292","#ff6db6","#ffb677","#490092","#006ddb","#b66dff","#b6dbff","#920000","#924900","#dbd100","#24ff24","#ffff6d","#6db6ff"), cex=1, box.lty=0, pch = 19, pt.cex = 1)
-#writeWebGL(dir = "webGL", filename = file.path("webGL", "3dpca.html"), width = 600, height=600)
+#writeWebGL(dir = "webGL", filename = file.path("webGL", "FigureS6.html"), width = 600, height=600)
 ```
 
 #Chronophylomorphospace
@@ -132,7 +132,7 @@ PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
 rgl.postscript("chronophylomorphospace2.svg", fmt="svg")
 
 ## Generate interactive 3D model as an HTML file
-writeWebGL(dir = "webGL", filename = file.path("webGL", "SigFig4.html"), width = 800, height=800)
+writeWebGL(dir = "webGL", filename = file.path("webGL", "FigureS7.html"), width = 800, height=800)
 ```
 
 #Phylosignal
@@ -140,13 +140,15 @@ writeWebGL(dir = "webGL", filename = file.path("webGL", "SigFig4.html"), width =
 ## Calculate Phylogenetic Signal
 fishphy=physignal(phylomorphospacegpa$coords, trimmed.tree, iter=999)
 summary(fishphy)
+pdf(file = "FigureS8.pdf", width=7.2, height=5)
 plot(fishphy)
+dev.off()
 ```
 
 ## Backtransformation Flatfishes
 ```{r}
-## This code uses Stereomorpho exclusively 
-## Need to load btShapes.R from 
+## This code uses Stereomorpho exclusively
+## Need to load btShapes.R from
 ## https://aaronolsen.github.io/tutorials/morphometrics/backtransform.html
 source('btShapes.R')
 
@@ -176,7 +178,7 @@ bt.col=bt.col[match(bt.group$bt.family,names(bt.col))]
 ## Function to generate outlines and bt
 outline=function(xy, coor, size=1, col='black'){
   if(ncol(coor) == 3){
-		coor <- coor %*% matrix(c(1,0,0, 0,cos(-pi/2),sin(-pi/2), 
+		coor <- coor %*% matrix(c(1,0,0, 0,cos(-pi/2),sin(-pi/2),
 		0,-sin(-pi/2),cos(-pi/2)), nrow=3, ncol=3)
 	}
 	# Get just x,y coordinates (orthographic projection into xy-plane)
@@ -190,11 +192,11 @@ outline=function(xy, coor, size=1, col='black'){
 	# Scale points and place back in position
 	coor <- coor*size
 	# Center about zero based on range of coordinates
-	coor <- coor - matrix(colMeans(apply(coor, 2, range)), 
+	coor <- coor - matrix(colMeans(apply(coor, 2, range)),
 		nrow=nrow(coor), ncol=ncol(coor), byrow=TRUE)
 	# Move shape to PC score
 	coor <- coor + matrix(xy, nrow(coor), ncol(coor), byrow=TRUE)
-	
+
 	### Create shape
 	polygon_order <- c(1,3,4,5,6,7,8,9,10,2,1)
 	line_order=c(1,2)
@@ -212,7 +214,7 @@ outline=function(xy, coor, size=1, col='black'){
 
 ## Generate Backtransformed PCA for PC1 and PC2
 pcs=1:2
-pdf('Figure1.pdf', width=7.2, height=5)
+pdf('Figure2.pdf', width=7.2, height=5)
 plot(scores[, pcs], type='n',
 	xlab=paste0('PC', pcs[1], ' (', round(per_var[pcs[1]]), '%)'),
 	ylab=paste0('PC', pcs[2], ' (', round(per_var[pcs[2]]), '%)'))
@@ -223,7 +225,7 @@ dev.off()
 
 ## Generate bt PCA for PC3 and PC4
 pcs=3:4
-pdf('SigFigure1.pdf', width=7.2, height=5)
+pdf('FigureS3.pdf', width=7.2, height=5)
 plot(scores[, pcs], type='n',
 	xlab=paste0('PC', pcs[3], ' (', round(per_var[pcs[3]]), '%)'),
 	ylab=paste0('PC', pcs[4], ' (', round(per_var[pcs[4]]), '%)'))
@@ -265,7 +267,7 @@ fit.full=procD.pgls(coords~depth+climate+water+food+sediment,data = gdf, phy=ANO
 
 summary(fit.full)
 
-# Pairwise difference for each ecological group 
+# Pairwise difference for each ecological group
 pw.depth=pairwise(fit.full, groups = gdf$depth)
 summary(pw.depth, test.type = "dist", confidence = 0.95, stat.table = TRUE)
 
@@ -298,7 +300,7 @@ col.sed=colblind_pal
 names(col.sed)=levels(ecology$sediment)
 col.sed=col.sed[match(ecology$sediment, names(col.sed))]
 
-pdf(file = "Phylomorphospace.ecology.pdf", width=8.5, height=10)
+pdf(file = "FigureS9.pdf", width=8.5, height=10)
 par(mfrow=c(2,2))
 #Climate Plot
 plotGMPhyloMorphoSpace(ANOVAtree,procustecology$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.clim, n.cex=.5, t.cex=1.5, lwd=1))
