@@ -66,7 +66,7 @@ pca
 ## Phylomorphospace
 ```{r}
 ## Read phylogeny
-tree=read.tree("Tree.tree")
+tree=read.tree("Byrne_tree.tree")
 
 ## Trim tree to match species in data set
 species=as.factor(classifier$Species)
@@ -98,7 +98,7 @@ names(col.fam)=levels(phylo.classifiers$Family)
 col.fam=col.fam[match(phylo.classifiers$Family, names(col.fam))]
 
 ## Generate PCA/Phylomorphospace for PC1 and PC2 with color blind colors
-pdf(file = "Figure3.pdf", width=7.2, height=5)
+pdf(file = "Figure1.pdf", width=7.2, height=5)
 fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1))
 fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
 PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
@@ -107,7 +107,7 @@ legend(-0.2, 0.105, legend = c("Achiridae","Achiropsettidae","Bothidae","Cithari
 dev.off()
 
 ## Generate PCA/Phylomorphospace for PC3 and PC4 with color blind colors
-pdf(file = "FigureS4.pdf", width=7.2, height=5)
+pdf(file = "SigFigure3.pdf", width=7.2, height=5)
 fish.anc <- plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 3, yaxis = 4)
 fish.PPCA <- prcomp(rbind(two.d.array(phylomorphospacegpa$coords), fish.anc))
 PPCA.coords=subset(fish.PPCA$x[3:4], row.names(fish.PPCA$x) %in% include)
@@ -118,7 +118,7 @@ dev.off()
 ## 3D PCA of axes 1, 2, and 3
 plotGMPhyloMorphoSpace(trimmed.tree,phylomorphospacegpa$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.fam, n.cex=.5, t.cex=1.5, lwd=1), xaxis = 1, yaxis = 2, zaxis = 3)
 #legend3d("bottomleft", legend = c("Achiridae","Achiropsettidae","Bothidae","Citharidae",   "Cynoglossidae","Paralichthyidae1","Paralichthyidae2" ,"Pleuronectidae","Poecilopsettidae","Psettodiae" ,"Rhombosoleidae","Samaridae","Scophthalmidae1","Scophthalmidae2","Soleidae"), col=c("#000000","#004949","#009292","#ff6db6","#ffb677","#490092","#006ddb","#b66dff","#b6dbff","#920000","#924900","#dbd100","#24ff24","#ffff6d","#6db6ff"), cex=1, box.lty=0, pch = 19, pt.cex = 1)
-#writeWebGL(dir = "webGL", filename = file.path("webGL", "FigureS6.html"), width = 600, height=600)
+#writeWebGL(dir = "webGL", filename = file.path("webGL", "3dpca.html"), width = 600, height=600)
 ```
 
 #Chronophylomorphospace
@@ -132,7 +132,7 @@ PPCA.coords=subset(fish.PPCA$x, row.names(fish.PPCA$x) %in% include)
 rgl.postscript("chronophylomorphospace2.svg", fmt="svg")
 
 ## Generate interactive 3D model as an HTML file
-writeWebGL(dir = "webGL", filename = file.path("webGL", "FigureS7.html"), width = 800, height=800)
+writeWebGL(dir = "webGL", filename = file.path("webGL", "SigFig4.html"), width = 800, height=800)
 ```
 
 #Phylosignal
@@ -140,9 +140,7 @@ writeWebGL(dir = "webGL", filename = file.path("webGL", "FigureS7.html"), width 
 ## Calculate Phylogenetic Signal
 fishphy=physignal(phylomorphospacegpa$coords, trimmed.tree, iter=999)
 summary(fishphy)
-pdf(file = "FigureS8.pdf", width=7.2, height=5)
 plot(fishphy)
-dev.off()
 ```
 
 ## Backtransformation Flatfishes
@@ -214,7 +212,7 @@ outline=function(xy, coor, size=1, col='black'){
 
 ## Generate Backtransformed PCA for PC1 and PC2
 pcs=1:2
-pdf('Figure2.pdf', width=7.2, height=5)
+pdf('Figure1.pdf', width=7.2, height=5)
 plot(scores[, pcs], type='n',
 	xlab=paste0('PC', pcs[1], ' (', round(per_var[pcs[1]]), '%)'),
 	ylab=paste0('PC', pcs[2], ' (', round(per_var[pcs[2]]), '%)'))
@@ -225,7 +223,7 @@ dev.off()
 
 ## Generate bt PCA for PC3 and PC4
 pcs=3:4
-pdf('FigureS3.pdf', width=7.2, height=5)
+pdf('SigFigure1.pdf', width=7.2, height=5)
 plot(scores[, pcs], type='n',
 	xlab=paste0('PC', pcs[3], ' (', round(per_var[pcs[3]]), '%)'),
 	ylab=paste0('PC', pcs[4], ' (', round(per_var[pcs[4]]), '%)'))
@@ -234,6 +232,59 @@ points(scores[,pcs], pch=21, bg=bt.col, cex=1.25)
 #text(scores[, pcs], labels=bt.group$Figure, cex=0.8, pos=4, offset=.5)
 dev.off()
 ```
+
+## Allometric analysis
+```{r}
+## Create geomorph data frame for allometric analyses
+allometric.gdf=geomorph.data.frame(meangpa, family=bt.group$Family)
+
+## Run linear regressions
+fit.family=procD.lm(coords ~ family, data=allometric.gdf)
+fit.size=procD.lm(coords ~ log(Csize), data=allometric.gdf) #simple allometry
+fit.unique=procD.lm(coords ~ log(Csize) * family, data=allometric.gdf) #unique family allometries
+
+anova(fit.size, fit.unique, print.progress = FALSE) #fit.unique significant = best model
+anova(fit.unique)
+
+## Plot prediction and Regression score
+pdf(file = "Figure5.pdf", width = 9, height = 5)
+par(mfrow=c(1,2))
+plot(fit.unique, type="regression", reg.type = "RegScore", predictor = log(allometric.gdf$Csize), col = "black", bg=bt.col, pch=21, ylab="log(Size)", cex=1.5)
+plot(fit.unique, type="regression", reg.type = "PredLine", predictor = log(allometric.gdf$Csize), col = "black", bg=bt.col, pch=21, ylab="log(Size)", cex=1.5)
+dev.off()
+
+## Calculate Procrustes variances for shape corrected for size and not corrected
+md.null=morphol.disparity(fit.family, data=allometric.gdf)
+md.null=md.null$Procrustes.var
+md.size=morphol.disparity(fit.unique, data=allometric.gdf)
+md.size=md.size$Procrustes.var
+
+## Compare size corrected and non-size corrected models
+md.effect=procD.lm(md.null~md.size)
+summary(md.effect)
+```
+
+#Fin length post-hoc test
+```{r}
+## Measure distance between landmarks for dorsal and anal fins
+lmks=matrix(c(3,8,5,10), ncol = 2, dimnames = list(c("dorsal.fin", "anal.fin"),c("start", "end")))
+fin.length=interlmkdist(meangpa$coords,lmks)
+
+fin.length=as.data.frame(fin.length)
+
+## Compare fin lengths to one another
+fin.regression=lm(dorsal.fin~anal.fin, data = fin.length)
+summary(fin.regression)
+
+## Plot fin lengths with regression line
+pdf('SigFigure.pdf', width=7.2, height=5)
+plot(dorsal.fin~anal.fin, data = fin.length, bg=bt.col, pch=21, cex=1.5, xlab="Anal fin length", ylab = "Dorsal fin length")
+abline(fin.regression)
+text(0.42, 0.435, labels="R-squared: 0.4234", cex=0.8, pos=4, offset=.5)
+text(0.42, 0.425, labels="P < 2.2e-16", cex=0.8, pos=4, offset=.5)
+dev.off()
+```
+
 
 ## Input Ecological Data
 ```{r}
@@ -300,19 +351,21 @@ col.sed=colblind_pal
 names(col.sed)=levels(ecology$sediment)
 col.sed=col.sed[match(ecology$sediment, names(col.sed))]
 
-pdf(file = "FigureS9.pdf", width=8.5, height=10)
-par(mfrow=c(2,2))
-#Climate Plot
-plotGMPhyloMorphoSpace(ANOVAtree,procustecology$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.clim, n.cex=.5, t.cex=1.5, lwd=1))
-legend("topleft", legend = c("Temperate","Subtropical","Tropical","Polar"), col=c("#009292","#004949","#ff6db6","#000000"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+pdf(file = "Phylomorphospace.ecology.pdf", width=5, height=10)
+par(mfrow=c(3,1))
 #Diet Plot
 plotGMPhyloMorphoSpace(ANOVAtree,procustecology$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.food, n.cex=.5, t.cex=1.5, lwd=1))
-legend("topleft", legend = c("Crustaceans", "Crustaceans and Fish","Crustaceans and Polychaete","Crustaceans, Polychaete, Echinoderms, and Fish","Crustaceans, Polychaete, and Fish","Fish"), col=c("#000000","#ffb677","#009292","#ff6db6","#004949","#490092"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+legend("bottomleft", legend = c("Crustaceans", "Crustaceans and Fish","Crustaceans and Polychaete","Crustaceans, Polychaete, Echinoderms, and Fish","Crustaceans, Polychaete, and Fish","Fish"), col=c("#000000","#ffb677","#009292","#ff6db6","#004949","#490092"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+mtext(side=3, line=-2, text="A.", adj=0.03, outer=T, cex = 1)
+
 #Water Plot
 plotGMPhyloMorphoSpace(ANOVAtree,procustecology$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.water, n.cex=.5, t.cex=1.5, lwd=1))
-legend("topleft", legend = c("Marine", "Marine and Brackish", "Marine, Brackishn and Fresh"), col=c("#000000","#004949","#009292"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+legend("bottomleft", legend = c("Marine", "Marine and Brackish", "Marine, Brackish and Fresh"), col=c("#000000","#004949","#009292"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+mtext(side=3, line=-12, text="B.", adj=0.03, outer=T, cex = 1)
+
 #Sediment Plot
 plotGMPhyloMorphoSpace(ANOVAtree,procustecology$coords, tip.labels=F, node.labels=F, ancStates=T, plot.param=list(t.bg=col.sed, n.cex=.5, t.cex=1.5, lwd=1))
-legend("topleft", legend = c("Mud",	"Mud and Sand",	"Mud, Sand, and Rock",	"Sand",	"Sand and Rock"), col=c("#000000","#004949","#009292", "#ff6db6",	"#ffb677"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+legend("bottomleft", legend = c("Mud",	"Mud and Sand",	"Mud, Sand, and Rock",	"Sand",	"Sand and Rock"), col=c("#000000","#004949","#009292", "#ff6db6",	"#ffb677"), cex=0.7, box.lty=0, pch = 19, pt.cex = 1.25)
+mtext(side=3, line=-22, text="C.", adj=0.03, outer=T, cex = 1)
 dev.off()
 ```
